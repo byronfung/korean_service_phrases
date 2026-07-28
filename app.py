@@ -1008,6 +1008,121 @@ PHRASES = [
 ]
 
 
+HANGUL_INITIALS = [
+    "g",
+    "kk",
+    "n",
+    "d",
+    "tt",
+    "r",
+    "m",
+    "b",
+    "pp",
+    "s",
+    "ss",
+    "",
+    "j",
+    "jj",
+    "ch",
+    "k",
+    "t",
+    "p",
+    "h",
+]
+HANGUL_MEDIALS = [
+    "a",
+    "ae",
+    "ya",
+    "yae",
+    "eo",
+    "e",
+    "yeo",
+    "ye",
+    "o",
+    "wa",
+    "wae",
+    "oe",
+    "yo",
+    "u",
+    "wo",
+    "we",
+    "wi",
+    "yu",
+    "eu",
+    "ui",
+    "i",
+]
+HANGUL_FINALS = [
+    "",
+    "k",
+    "k",
+    "k",
+    "n",
+    "n",
+    "n",
+    "t",
+    "l",
+    "k",
+    "m",
+    "l",
+    "l",
+    "l",
+    "p",
+    "p",
+    "m",
+    "p",
+    "p",
+    "t",
+    "t",
+    "ng",
+    "t",
+    "t",
+    "k",
+    "t",
+    "p",
+    "t",
+]
+ROMANIZATION_OVERRIDES = {
+    "잃어버렸어요": "ireobeoryeosseoyo",
+    "괜찮으세요": "gwaenchanh-euseyo",
+    "말씀드릴게요": "malsseumdeurilgeyo",
+    "가져다드릴게요": "gajyeodadeurilgeyo",
+    "어떻게": "eotteoke",
+    "감사합니다": "gamsahamnida",
+    "죄송합니다": "joesonghamnida",
+    "드릴까요": "deurilkkayo",
+    "드릴게요": "deurilgeyo",
+    "있어요": "isseoyo",
+    "좋아요": "joayo",
+    "합니다": "hamnida",
+}
+
+
+def romanize_korean(text: str) -> str:
+    """Return a readable Revised-Romanization-style guide for Hangul text."""
+    for korean, pronunciation in sorted(
+        ROMANIZATION_OVERRIDES.items(), key=lambda item: len(item[0]), reverse=True
+    ):
+        text = text.replace(korean, pronunciation)
+
+    romanized = []
+    for character in text:
+        codepoint = ord(character)
+        if 0xAC00 <= codepoint <= 0xD7A3:
+            syllable = codepoint - 0xAC00
+            initial = syllable // 588
+            medial = (syllable % 588) // 28
+            final = syllable % 28
+            romanized.append(
+                HANGUL_INITIALS[initial]
+                + HANGUL_MEDIALS[medial]
+                + HANGUL_FINALS[final]
+            )
+        else:
+            romanized.append(character)
+    return "".join(romanized)
+
+
 CONVERSATION_RESPONSES = {
     "restaurant_table_two": [
         ("네, 이쪽으로 오세요.", "Yes, please come this way."),
@@ -1490,8 +1605,8 @@ def korean_voice_selector() -> None:
 def render_word_table(words: list[tuple[str, str, str, str]]) -> None:
     rows = [
         {
-            "Korean": word,
-            "Pronunciation": pronunciation,
+            "Hangul": word,
+            "English pronunciation": pronunciation,
             "Meaning": meaning,
             "How it works": note,
         }
@@ -1506,8 +1621,12 @@ def render_conversations(phrase: dict) -> None:
         st.write("Hear how the same phrase might fit into a real service interaction.")
         for index, (response, translation) in enumerate(responses, start=1):
             st.markdown(f"**Example {index}**")
-            st.markdown(f"**You:** {phrase['korean']}  \n{phrase['english']}")
-            st.markdown(f"**Staff:** {response}  \n{translation}")
+            st.markdown(f"**You (Hangul):** {phrase['korean']}")
+            st.caption(f"English pronunciation: {phrase['romanization']}")
+            st.caption(f"English translation: {phrase['english']}")
+            st.markdown(f"**Staff (Hangul):** {response}")
+            st.caption(f"English pronunciation: {romanize_korean(response)}")
+            st.caption(f"English translation: {translation}")
             if index != len(responses):
                 st.divider()
 
@@ -1519,8 +1638,11 @@ def render_phrase_card(phrase: dict) -> None:
     top_left, top_right = st.columns([0.72, 0.28], vertical_alignment="top")
     with top_left:
         st.caption(f'{phrase["category"]} · {phrase["level"]}')
+        st.caption("English translation")
         st.markdown(f"## {phrase['english']}")
+        st.caption("Hangul")
         st.markdown(f"<div class='korean-line'>{phrase['korean']}</div>", unsafe_allow_html=True)
+        st.caption("English pronunciation")
         st.markdown(f"<div class='romanization'>{phrase['romanization']}</div>", unsafe_allow_html=True)
     with top_right:
         if st.button("Favorite" if not favorite else "Favorited", width="stretch"):
@@ -1537,7 +1659,10 @@ def render_phrase_card(phrase: dict) -> None:
             st.rerun()
 
     st.markdown(f"**When to use it:** {phrase['context']}")
-    st.markdown(f"**Likely response:** {phrase['response']}")
+    response_korean, response_translation = phrase["response"].split(" = ", 1)
+    st.markdown(f"**Likely response (Hangul):** {response_korean}")
+    st.caption(f"English pronunciation: {romanize_korean(response_korean)}")
+    st.caption(f"English translation: {response_translation}")
     render_conversations(phrase)
 
     play_col, slow_col = st.columns(2)
@@ -1591,8 +1716,10 @@ def render_drill(phrases: list[dict]) -> None:
     st.markdown(f"**Prompt:** {phrase['english']}")
 
     with st.expander("Reveal Korean"):
+        st.markdown(f"**Hangul:**")
         st.markdown(f"<div class='drill-korean'>{phrase['korean']}</div>", unsafe_allow_html=True)
-        st.markdown(phrase["romanization"])
+        st.markdown(f"**English pronunciation:** {phrase['romanization']}")
+        st.markdown(f"**English translation:** {phrase['english']}")
         tts_button(phrase["korean"], "Play phrase", f"drill-{phrase['id']}", rate=0.78)
 
 
@@ -1839,9 +1966,9 @@ def main() -> None:
             {
                 "Situation": phrase["category"],
                 "Level": phrase["level"],
-                "English": phrase["english"],
-                "Korean": phrase["korean"],
-                "Pronunciation": phrase["romanization"],
+                "English translation": phrase["english"],
+                "Hangul": phrase["korean"],
+                "English pronunciation": phrase["romanization"],
                 "Learned": "Yes" if phrase["id"] in st.session_state.mastered else "",
             }
             for phrase in PHRASES
