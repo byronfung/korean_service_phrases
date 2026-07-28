@@ -381,12 +381,56 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         <button id="speak-{safe_key}" class="speak-button">{safe_label}</button>
         <script>
         const button = document.getElementById("speak-{safe_key}");
+        const preferredVoiceNames = [
+            "natural",
+            "neural",
+            "enhanced",
+            "premium",
+            "sunhi",
+            "hyunsu",
+            "yuna",
+            "sora",
+            "heami",
+        ];
+        let koreanVoices = [];
+
+        const loadKoreanVoices = () => {{
+            koreanVoices = window.speechSynthesis.getVoices().filter((voice) =>
+                voice.lang.toLowerCase().startsWith("ko")
+            );
+        }};
+        loadKoreanVoices();
+        window.speechSynthesis.addEventListener("voiceschanged", loadKoreanVoices);
+
+        const chooseKoreanVoice = () => {{
+            const voices = koreanVoices.length
+                ? koreanVoices
+                : window.speechSynthesis.getVoices().filter((voice) =>
+                    voice.lang.toLowerCase().startsWith("ko")
+                );
+            return [...voices].sort((left, right) => {{
+                const leftName = left.name.toLowerCase();
+                const rightName = right.name.toLowerCase();
+                const leftScore = preferredVoiceNames.reduce(
+                    (score, word, index) => score + (leftName.includes(word) ? 100 - index : 0),
+                    0
+                );
+                const rightScore = preferredVoiceNames.reduce(
+                    (score, word, index) => score + (rightName.includes(word) ? 100 - index : 0),
+                    0
+                );
+                return rightScore - leftScore;
+            }})[0];
+        }};
+
         button.onclick = () => {{
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance("{safe_text}");
             utterance.lang = "ko-KR";
             utterance.rate = {rate};
             utterance.pitch = 1;
+            const koreanVoice = chooseKoreanVoice();
+            if (koreanVoice) utterance.voice = koreanVoice;
             window.speechSynthesis.speak(utterance);
         }};
         </script>
