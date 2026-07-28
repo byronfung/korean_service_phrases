@@ -1282,6 +1282,7 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         <button id="speak-{safe_key}" class="speak-button">{safe_label}</button>
         <script>
         const button = document.getElementById("speak-{safe_key}");
+        const synthesis = "speechSynthesis" in window ? window.speechSynthesis : null;
         const voiceStorageKey = "korean-service-phrase-voice";
         const preferredVoiceNames = [
             "natural",
@@ -1297,17 +1298,24 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         let koreanVoices = [];
 
         const loadKoreanVoices = () => {{
-            koreanVoices = window.speechSynthesis.getVoices().filter((voice) =>
-                voice.lang.toLowerCase().startsWith("ko")
-            );
+            if (!synthesis) return;
+            try {{
+                koreanVoices = synthesis.getVoices().filter((voice) =>
+                    voice.lang.toLowerCase().startsWith("ko")
+                );
+            }} catch (error) {{
+                koreanVoices = [];
+            }}
         }};
-        loadKoreanVoices();
-        window.speechSynthesis.addEventListener("voiceschanged", loadKoreanVoices);
+        if (synthesis) {{
+            loadKoreanVoices();
+            synthesis.addEventListener("voiceschanged", loadKoreanVoices);
+        }}
 
         const chooseKoreanVoice = () => {{
             const voices = koreanVoices.length
                 ? koreanVoices
-                : window.speechSynthesis.getVoices().filter((voice) =>
+                : (synthesis ? synthesis.getVoices() : []).filter((voice) =>
                     voice.lang.toLowerCase().startsWith("ko")
                 );
             let savedVoiceName = "";
@@ -1334,14 +1342,15 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         }};
 
         button.onclick = () => {{
-            window.speechSynthesis.cancel();
+            if (!synthesis || !("SpeechSynthesisUtterance" in window)) return;
+            synthesis.cancel();
             const utterance = new SpeechSynthesisUtterance("{safe_text}");
             utterance.lang = "ko-KR";
             utterance.rate = {rate};
             utterance.pitch = 1;
             const koreanVoice = chooseKoreanVoice();
             if (koreanVoice) utterance.voice = koreanVoice;
-            window.speechSynthesis.speak(utterance);
+            synthesis.speak(utterance);
         }};
         </script>
         <style>
@@ -1376,67 +1385,93 @@ def korean_voice_selector() -> None:
         </div>
         <script>
         const voiceSelect = document.getElementById("korean-voice-select");
+        const synthesis = "speechSynthesis" in window ? window.speechSynthesis : null;
         const voiceStorageKey = "korean-service-phrase-voice";
+        let attempts = 0;
 
-        const readVoicePreference = () => {{
-            try {{
+        const getKoreanVoices = () => {
+            if (!synthesis) return [];
+            try {
+                return synthesis.getVoices()
+                    .filter((voice) => voice.lang.toLowerCase().startsWith("ko"))
+                    .sort((left, right) => left.name.localeCompare(right.name));
+            } catch (error) {
+                return [];
+            }
+        };
+
+        const readVoicePreference = () => {
+            try {
                 return window.localStorage.getItem(voiceStorageKey) || "";
-            }} catch (error) {{
+            } catch (error) {
                 return "";
-            }}
-        }};
+            }
+        };
 
-        const saveVoicePreference = (voiceName) => {{
-            try {{
+        const saveVoicePreference = (voiceName) => {
+            try {
                 if (voiceName) window.localStorage.setItem(voiceStorageKey, voiceName);
                 else window.localStorage.removeItem(voiceStorageKey);
-            }} catch (error) {{
+            } catch (error) {
                 // Some embedded browser contexts do not expose local storage.
-            }}
-        }};
+            }
+        };
 
-        const renderKoreanVoices = () => {{
-            const voices = window.speechSynthesis.getVoices()
-                .filter((voice) => voice.lang.toLowerCase().startsWith("ko"))
-                .sort((left, right) => left.name.localeCompare(right.name));
+        const renderKoreanVoices = (finalAttempt = false) => {
+            const voices = getKoreanVoices();
+            if (!voices.length && !finalAttempt) return false;
             const savedVoice = readVoicePreference();
 
             voiceSelect.innerHTML = "";
             const automaticOption = document.createElement("option");
             automaticOption.value = "";
-            automaticOption.textContent = "Automatic best voice";
+            automaticOption.textContent = synthesis
+                ? "Automatic best voice"
+                : "Browser speech unavailable";
             voiceSelect.appendChild(automaticOption);
 
-            voices.forEach((voice) => {{
+            voices.forEach((voice) => {
                 const option = document.createElement("option");
                 option.value = voice.name;
-                option.textContent = `${{voice.name}} (${{voice.lang}})`;
+                option.textContent = `${voice.name} (${voice.lang})`;
                 voiceSelect.appendChild(option);
-            }});
+            });
 
             voiceSelect.value = voices.some((voice) => voice.name === savedVoice)
                 ? savedVoice
                 : "";
-            if (!voices.length) {{
+            if (!voices.length && synthesis) {
                 automaticOption.textContent = "No Korean voices found";
-            }}
-        }};
+            }
+            return true;
+        };
+
+        const retryVoiceLoad = () => {
+            if (renderKoreanVoices()) return;
+            attempts += 1;
+            if (attempts < 40) setTimeout(retryVoiceLoad, 250);
+            else renderKoreanVoices(true);
+        };
 
         voiceSelect.addEventListener("change", () => saveVoicePreference(voiceSelect.value));
-        renderKoreanVoices();
-        window.speechSynthesis.addEventListener("voiceschanged", renderKoreanVoices);
+        if (synthesis) {
+            synthesis.addEventListener("voiceschanged", () => renderKoreanVoices(true));
+            retryVoiceLoad();
+        } else {
+            renderKoreanVoices(true);
+        }
         </script>
         <style>
-        .voice-picker {{
+        .voice-picker {
             display: grid;
             gap: 0.35rem;
             font: 0.86rem -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }}
-        .voice-picker label {{
+        }
+        .voice-picker label {
             color: #2e3834;
             font-weight: 600;
-        }}
-        .voice-picker select {{
+        }
+        .voice-picker select {
             width: 100%;
             min-height: 2.45rem;
             border: 1px solid #b9afa1;
@@ -1445,7 +1480,7 @@ def korean_voice_selector() -> None:
             color: #1f2523;
             padding: 0.35rem 0.5rem;
             font: inherit;
-        }}
+        }
         </style>
         """,
         height=86,
