@@ -351,6 +351,90 @@ PHRASES = [
 ]
 
 
+CONVERSATION_RESPONSES = {
+    "restaurant_table_two": [
+        ("네, 이쪽으로 오세요.", "Yes, please come this way."),
+        ("몇 분이세요?", "How many people?"),
+        ("창가 자리 괜찮으세요?", "Is a window seat okay?"),
+    ],
+    "restaurant_reservation": [
+        ("성함이 어떻게 되세요?", "What name is it under?"),
+        ("예약 확인해 드릴게요.", "I will check your reservation."),
+        ("잠시만 기다려 주세요.", "Please wait a moment."),
+    ],
+    "restaurant_recommendation": [
+        ("이 메뉴가 제일 잘 나가요.", "This menu item is the most popular."),
+        ("오늘은 이게 맛있어요.", "This is delicious today."),
+        ("매운 음식 괜찮으세요?", "Is spicy food okay?"),
+    ],
+    "restaurant_not_spicy": [
+        ("네, 안 맵게 해 드릴게요.", "Yes, we will make it not spicy."),
+        ("조금 매울 수 있어요.", "It may be a little spicy."),
+        ("고추는 빼 드릴게요.", "We will leave out the chili peppers."),
+    ],
+    "restaurant_no_meat": [
+        ("네, 돼지고기가 들어가요.", "Yes, it contains pork."),
+        ("고기는 안 들어가요.", "It does not contain meat."),
+        ("소고기가 들어가요.", "It contains beef."),
+    ],
+    "restaurant_water": [
+        ("네, 가져다드릴게요.", "Yes, I will bring it to you."),
+        ("물은 셀프예요.", "Water is self-service."),
+        ("여기 물 있습니다.", "Here is some water."),
+    ],
+    "restaurant_bill": [
+        ("카운터에서 계산하시면 돼요.", "You can pay at the counter."),
+        ("네, 바로 가져다드릴게요.", "Yes, I will bring it right away."),
+        ("같이 계산해 드릴까요?", "Shall I combine the bill?"),
+    ],
+    "restaurant_card": [
+        ("네, 카드 돼요.", "Yes, card is okay."),
+        ("죄송하지만 현금만 돼요.", "Sorry, cash only."),
+        ("여기 꽂아 주세요.", "Please insert it here."),
+    ],
+    "spa_reservation": [
+        ("예약자 성함이 어떻게 되세요?", "What name is the reservation under?"),
+        ("확인해 드릴게요.", "I will check it for you."),
+        ("탈의실은 이쪽이에요.", "The changing room is this way."),
+    ],
+    "spa_pressure": [
+        ("네, 괜찮으세요?", "Yes, is this okay?"),
+        ("조금 약하게 해 드릴게요.", "I will make it a little softer."),
+        ("이 정도면 괜찮으세요?", "Is this level okay?"),
+    ],
+    "spa_stronger": [
+        ("네, 이렇게 괜찮으세요?", "Yes, is this okay?"),
+        ("조금 더 세게 해 드릴게요.", "I will make it a little stronger."),
+        ("너무 세면 말씀해 주세요.", "Please tell me if it is too strong."),
+    ],
+    "spa_hurts": [
+        ("아, 죄송합니다.", "Oh, I am sorry."),
+        ("괜찮으세요?", "Are you okay?"),
+        ("바로 약하게 해 드릴게요.", "I will make it gentler right away."),
+    ],
+    "spa_finished": [
+        ("감사합니다. 또 오세요.", "Thank you. Please come again."),
+        ("오늘 마사지 괜찮으셨어요?", "Was the massage okay today?"),
+        ("조심히 들어가세요.", "Take care on your way home."),
+    ],
+    "general_excuse": [
+        ("네?", "Yes? How can I help?"),
+        ("무슨 일이세요?", "What is it?"),
+        ("도와드릴까요?", "Can I help you?"),
+    ],
+    "general_sorry_korean": [
+        ("괜찮아요.", "It is okay."),
+        ("천천히 말씀드릴게요.", "I will speak slowly."),
+        ("영어 하실 수 있는 분 불러 드릴까요?", "Shall I call someone who speaks English?"),
+    ],
+    "general_repeat": [
+        ("네, 다시 말씀드릴게요.", "Yes, I will say it again."),
+        ("천천히 말씀드릴게요.", "I will speak slowly."),
+        ("어느 부분이 어려우세요?", "Which part is difficult?"),
+    ],
+}
+
+
 def init_state() -> None:
     st.session_state.setdefault("mastered", set())
     st.session_state.setdefault("favorites", set())
@@ -564,6 +648,18 @@ def render_word_table(words: list[tuple[str, str, str, str]]) -> None:
     st.dataframe(rows, hide_index=True, width="stretch")
 
 
+def render_conversations(phrase: dict) -> None:
+    responses = CONVERSATION_RESPONSES[phrase["id"]]
+    with st.expander("Example conversations"):
+        st.write("Hear how the same phrase might fit into a real service interaction.")
+        for index, (response, translation) in enumerate(responses, start=1):
+            st.markdown(f"**Example {index}**")
+            st.markdown(f"**You:** {phrase['korean']}  \n{phrase['english']}")
+            st.markdown(f"**Staff:** {response}  \n{translation}")
+            if index != len(responses):
+                st.divider()
+
+
 def render_phrase_card(phrase: dict) -> None:
     mastered = phrase["id"] in st.session_state.mastered
     favorite = phrase["id"] in st.session_state.favorites
@@ -590,6 +686,7 @@ def render_phrase_card(phrase: dict) -> None:
 
     st.markdown(f"**When to use it:** {phrase['context']}")
     st.markdown(f"**Likely response:** {phrase['response']}")
+    render_conversations(phrase)
 
     play_col, slow_col = st.columns(2)
     with play_col:
