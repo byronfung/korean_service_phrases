@@ -381,6 +381,7 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         <button id="speak-{safe_key}" class="speak-button">{safe_label}</button>
         <script>
         const button = document.getElementById("speak-{safe_key}");
+        const voiceStorageKey = "korean-service-phrase-voice";
         const preferredVoiceNames = [
             "natural",
             "neural",
@@ -408,6 +409,14 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
                 : window.speechSynthesis.getVoices().filter((voice) =>
                     voice.lang.toLowerCase().startsWith("ko")
                 );
+            let savedVoiceName = "";
+            try {{
+                savedVoiceName = window.localStorage.getItem(voiceStorageKey) || "";
+            }} catch (error) {{
+                savedVoiceName = "";
+            }}
+            const savedVoice = voices.find((voice) => voice.name === savedVoiceName);
+            if (savedVoice) return savedVoice;
             return [...voices].sort((left, right) => {{
                 const leftName = left.name.toLowerCase();
                 const rightName = right.name.toLowerCase();
@@ -452,6 +461,93 @@ def tts_button(text: str, button_label: str, key: str, rate: float = 0.78) -> No
         </style>
         """,
         height=56,
+    )
+
+
+def korean_voice_selector() -> None:
+    components.html(
+        """
+        <div class="voice-picker">
+            <label for="korean-voice-select">Pronunciation voice</label>
+            <select id="korean-voice-select">
+                <option value="">Loading Korean voices...</option>
+            </select>
+        </div>
+        <script>
+        const voiceSelect = document.getElementById("korean-voice-select");
+        const voiceStorageKey = "korean-service-phrase-voice";
+
+        const readVoicePreference = () => {{
+            try {{
+                return window.localStorage.getItem(voiceStorageKey) || "";
+            }} catch (error) {{
+                return "";
+            }}
+        }};
+
+        const saveVoicePreference = (voiceName) => {{
+            try {{
+                if (voiceName) window.localStorage.setItem(voiceStorageKey, voiceName);
+                else window.localStorage.removeItem(voiceStorageKey);
+            }} catch (error) {{
+                // Some embedded browser contexts do not expose local storage.
+            }}
+        }};
+
+        const renderKoreanVoices = () => {{
+            const voices = window.speechSynthesis.getVoices()
+                .filter((voice) => voice.lang.toLowerCase().startsWith("ko"))
+                .sort((left, right) => left.name.localeCompare(right.name));
+            const savedVoice = readVoicePreference();
+
+            voiceSelect.innerHTML = "";
+            const automaticOption = document.createElement("option");
+            automaticOption.value = "";
+            automaticOption.textContent = "Automatic best voice";
+            voiceSelect.appendChild(automaticOption);
+
+            voices.forEach((voice) => {{
+                const option = document.createElement("option");
+                option.value = voice.name;
+                option.textContent = `${{voice.name}} (${{voice.lang}})`;
+                voiceSelect.appendChild(option);
+            }});
+
+            voiceSelect.value = voices.some((voice) => voice.name === savedVoice)
+                ? savedVoice
+                : "";
+            if (!voices.length) {{
+                automaticOption.textContent = "No Korean voices found";
+            }}
+        }};
+
+        voiceSelect.addEventListener("change", () => saveVoicePreference(voiceSelect.value));
+        renderKoreanVoices();
+        window.speechSynthesis.addEventListener("voiceschanged", renderKoreanVoices);
+        </script>
+        <style>
+        .voice-picker {{
+            display: grid;
+            gap: 0.35rem;
+            font: 0.86rem -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }}
+        .voice-picker label {{
+            color: #2e3834;
+            font-weight: 600;
+        }}
+        .voice-picker select {{
+            width: 100%;
+            min-height: 2.45rem;
+            border: 1px solid #b9afa1;
+            border-radius: 7px;
+            background: #fffaf1;
+            color: #1f2523;
+            padding: 0.35rem 0.5rem;
+            font: inherit;
+        }}
+        </style>
+        """,
+        height=86,
     )
 
 
@@ -563,6 +659,10 @@ def render_sidebar() -> tuple[str, str, bool, list[dict]]:
         target = date(date.today().year + 1, 12, 1)
     days_left = (target - date.today()).days
     st.sidebar.metric("Days until December practice target", days_left)
+
+    with st.sidebar:
+        st.markdown("#### Pronunciation")
+        korean_voice_selector()
 
     category = st.sidebar.selectbox("Situation", categories)
     level = st.sidebar.selectbox("Level", levels)
