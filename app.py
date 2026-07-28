@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from html import escape
 
 import streamlit as st
@@ -750,12 +749,6 @@ def render_sidebar() -> tuple[str, str, bool, list[dict]]:
 
     st.sidebar.title("Korean Phrase Coach")
     st.sidebar.caption("For restaurants, spas, and service conversations in Korea.")
-
-    target = date(date.today().year, 12, 1)
-    if date.today() > target:
-        target = date(date.today().year + 1, 12, 1)
-    days_left = (target - date.today()).days
-    st.sidebar.metric("Days until December practice target", days_left)
 
     with st.sidebar:
         st.markdown("#### Pronunciation")
