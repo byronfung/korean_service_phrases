@@ -536,12 +536,112 @@ def render_styles() -> None:
     st.markdown(
         """
         <style>
+        :root {
+            color-scheme: light;
+        }
         .stApp {
             background: #f7f4ef;
             color: #1f2523;
         }
         [data-testid="stSidebar"] {
             background: #ece5d8;
+            color: #1f2523;
+        }
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] {
+            background: #f7f4ef;
+            color: #1f2523;
+        }
+        [data-testid="stHeader"] {
+            background: transparent;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            background: #ece5d8;
+        }
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] div {
+            color: #1f2523;
+        }
+        label,
+        p,
+        [data-testid="stCaptionContainer"] {
+            color: #2e3834;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #17211e;
+        }
+        input,
+        textarea,
+        [data-baseweb="input"] > div,
+        [data-baseweb="textarea"] > div {
+            background: #fffaf1 !important;
+            color: #1f2523 !important;
+            border-color: #b9afa1 !important;
+            -webkit-text-fill-color: #1f2523 !important;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: #68716d !important;
+            -webkit-text-fill-color: #68716d !important;
+        }
+        [data-baseweb="select"] > div {
+            background: #fffaf1 !important;
+            color: #1f2523 !important;
+            border-color: #b9afa1 !important;
+        }
+        [data-baseweb="select"] div,
+        [data-baseweb="select"] input,
+        [data-baseweb="select"] span {
+            color: #1f2523 !important;
+            -webkit-text-fill-color: #1f2523 !important;
+        }
+        [data-baseweb="select"] svg {
+            fill: #1f2523 !important;
+        }
+        [data-baseweb="popover"],
+        [data-baseweb="menu"],
+        [role="listbox"] {
+            background: #fffaf1 !important;
+            color: #1f2523 !important;
+            border: 1px solid #b9afa1 !important;
+        }
+        [role="option"] {
+            background: #fffaf1 !important;
+            color: #1f2523 !important;
+        }
+        [role="option"]:hover,
+        [role="option"][aria-selected="true"] {
+            background: #e5eee9 !important;
+            color: #173e38 !important;
+        }
+        [data-testid="stCheckbox"] label,
+        [data-testid="stSlider"] label {
+            color: #1f2523 !important;
+        }
+        [data-baseweb="tab-list"] {
+            border-bottom-color: #c9c0b4 !important;
+        }
+        [data-baseweb="tab"] {
+            color: #394641 !important;
+        }
+        [data-baseweb="tab"][aria-selected="true"] {
+            color: #173e38 !important;
+            border-bottom-color: #275a53 !important;
+        }
+        [data-testid="stExpander"] {
+            background: #fffaf1;
+            border-color: #c9c0b4;
+        }
+        [data-testid="stExpander"] summary,
+        [data-testid="stExpander"] summary span {
+            color: #1f2523 !important;
         }
         .korean-line {
             font-size: 2.45rem;
@@ -582,9 +682,29 @@ def render_styles() -> None:
             border-radius: 8px;
             padding: 0.75rem;
         }
+        div[data-testid="stMetric"] label,
+        div[data-testid="stMetric"] [data-testid="stMetricValue"],
+        div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
+            color: #1f2523 !important;
+        }
         .stButton > button {
+            background: #275a53 !important;
+            color: #ffffff !important;
+            border: 1px solid #275a53 !important;
             border-radius: 8px;
             min-height: 2.65rem;
+        }
+        .stButton > button:hover {
+            background: #1f4842 !important;
+            border-color: #1f4842 !important;
+            color: #ffffff !important;
+        }
+        .stButton > button p,
+        .stButton > button span {
+            color: #ffffff !important;
+        }
+        div[data-testid="stAlert"] {
+            color: #1f2523 !important;
         }
         </style>
         """,
